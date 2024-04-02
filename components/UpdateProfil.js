@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView, TextInput } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { RadioButton, Icon } from 'react-native-paper';
 import * as SQLite from 'expo-sqlite';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,6 +12,12 @@ export default function UpdateProfil() {
 
   const navigation = useNavigation();
 
+  // Constante du chargement
+  const [loading, setLoading] = useState(true);
+
+  // Constante permettant de mettre les différentes tables de la base de données les une après les autres
+  const [updateNext, setUpdateNext] = useState(0);
+
   // constante pour ouvrir ma base de données GFOOD 
   const db = SQLite.openDatabase("GFOOD_db");
 
@@ -21,6 +27,14 @@ export default function UpdateProfil() {
   const [tel, setTel] = useState();
   const [gender, setGender] = useState();
   const [profLink, setProfLink] = useState();
+
+  // Constantes statiques pour éffectuer aussi la mise à jour de toutes les autres tables de la BD 
+  const [usernameStatic, setUsernameStatic] = useState("");
+  const [emailStatic, setEmailStatic] = useState("");
+  const [passwordStatic, setPasswordStatic] = useState("");
+  const [telStatic, setTelStatic] = useState();
+  const [genderStatic, setGenderStatic] = useState();
+  const [profLinkStatic, setProfLinkStatic] = useState();
 
  const [checked, setChecked] = React.useState('second');
  const [idUser, setIdUser] = useState();
@@ -45,6 +59,16 @@ export default function UpdateProfil() {
                                 setGender(rows.item(0).Gender);
                                 setProfLink(rows.item(0).Profil);
                                 setTel(rows.item(0).Tel.toString());
+
+                                setLoading(false)
+
+                                // Ici on définit les différentes constantes statiques
+                                setUsernameStatic(rows.item(0).Username);
+                                setEmailStatic(rows.item(0).Email);
+                                setPasswordStatic(rows.item(0).Password);
+                                setGenderStatic(rows.item(0).Gender);
+                                setProfLinkStatic(rows.item(0).Profil);
+                                setTelStatic(rows.item(0).Tel.toString());
                            
                         },
                         (_, error) => {
@@ -59,6 +83,30 @@ export default function UpdateProfil() {
       // Gérer l'erreur de sauvegarde
     }
  }
+
+        // Fonction pour la mise à jour de la table Notifications
+        const updateNotifications = () => {
+
+          db.transaction(tx => {
+            tx.executeSql(
+              "SELECT * FROM Notifications",
+              [],
+              (_, { rows }) => {
+                if (rows.length > 0) {
+                  for(let i=0; i<rows.length; i++){
+                   // alert(profLinkStatic);
+                      if(rows.item(i).User == usernameStatic && rows.item(i).Profil == null) {
+                          let id = rows.item(i).id;
+                          tx.executeSql(
+                            "UPDATE Notifications SET User = ?, Profil = ? WHERE id = ?",
+                            [username, profLink, id],
+                            () => {alert("table des notifications mise à jour avec succès !")}
+                          )
+                      }
+            }
+          }})})
+
+        }
 
 
  useEffect(() => {
@@ -136,7 +184,8 @@ export default function UpdateProfil() {
                 alert("Please fill in all the fields");
          }else if( !(tel >= 0) || tel.length < 8){
           alert("Il se pourrait que vous ayez mal écrit votre numéro de téléphone. Veuillez le rectifier s'il vous plaît !")
-         }else{
+         }
+         else{
                   
                for(let i = 0; i < email.length; i++){
                  if(email.charAt(i) == "@") {
@@ -149,23 +198,275 @@ export default function UpdateProfil() {
                                 try{
   
                                   db.transaction(tx => {
+
                                     tx.executeSql(
-                                      "UPDATE Users SET Username = ?, Email = ?, Password = ?, Tel = ?, Gender = ?, Profil = ? WHERE id = ?",
-                                      [username, email, password, tel, gender, profLink, idUser],
-                                      (_, results) => {
-                                        // Validation de la modification dans la base de données
-                                        alert('Informations mises à jour avec succès');
-                                        refreshAsync("activeUser", username, profLink);
-                                        renderData();
-                                          navigation.navigate("Home");
-                                          navigation.navigate("Your Profil");
-                                        
-                                      },
-                                      (_, error) => {
-                                        console.log("Error fetching user details:", error);
-                                        alert("Error fetching user details: " + error);
-                                      }
-                                    );
+                                      "SELECT * FROM Users",
+                                      [],
+                                      (_, { rows }) => {
+                                        if (rows.length > 0) {
+                                          for(let i=0; i<rows.length; i++){
+                                                if(rows.item(i).Username == username && usernameStatic != username){
+                                                  alert("Veuillez changer votre Username s'il vous plaît !");
+                                                  return
+                                                  }else if (rows.item(i).Email == email && emailStatic != email) {
+                                                      alert("Veuillez changer votre adresse Email s'il vous plaît !");
+                                                      return
+                                                  }else if (rows.item(i).Tel == tel && telStatic != tel) {
+                                                  alert("Veuillez changer votre numéro de téléphone s'il vous plaît !");
+                                                  return
+                                              } else if(i == rows.length-1){
+                                                     
+                                    // On commence par la table Messages à faire les mise à jour
+                                    db.transaction(tx => {
+                                    tx.executeSql(
+                                      "SELECT * FROM Messages",
+                                      [],
+                                      (_, { rows }) => {
+
+                                         let taille;
+                                         if(rows.length <= 0) {
+                                           taille = 1;
+                                         } else {
+                                           taille = rows.length;
+                                         }
+
+                                        if (taille > 0) {
+                                          for(let i=0; i<taille; i++){
+                                              if(rows.length != 0){
+                                                if(rows.item(i).Envoyeur == usernameStatic && rows.item(i).NomEnvoyeur == usernameStatic){
+                                                let id = rows.item(i).id;
+                                                tx.executeSql(
+                                                  "UPDATE Messages SET Envoyeur = ?, NomEnvoyeur = ? WHERE id = ?",
+                                                  [username, username, id],
+                                                  //()=>{alert("Table Messages mise à jour avec succès !")}
+                                                )
+                                              } else if(rows.item(i).Recepteur == usernameStatic) {
+                                                let id = rows.item(i).id;
+                                                tx.executeSql(
+                                                  "UPDATE Messages SET Recepteur = ? WHERE id = ?",
+                                                  [username, id],
+                                                  //()=>{alert("Table Messages mise à jour avec succès !")}
+                                                )
+                                              }}
+                                            } 
+
+                                            // Après la c'est la table Notifications qu'on met à jour
+                                            db.transaction(tx => {
+                                              tx.executeSql(
+                                                "SELECT * FROM Notifications",
+                                                [],
+                                                (_, { rows }) => {
+
+                                                  let taille;
+                                                  if(rows.length <= 0) {
+                                                    taille = 1;
+                                                  } else {
+                                                    taille = rows.length;
+                                                  }
+
+                                                  if (taille > 0) {
+                                                    for(let i=0; i<taille; i++){
+                                                        if(rows.length != 0){
+                                                          if(rows.item(i).User == usernameStatic /*&& rows.item(i).Profil == profLinkStatic*/) {
+                                                            let id = rows.item(i).id;
+                                                            tx.executeSql(
+                                                              "UPDATE Notifications SET User = ?, Profil = ? WHERE id = ?",
+                                                              [username, profLink, id],
+                                                              //() => {alert("table des notifications mise à jour avec succès !")}
+                                                            )
+                                                        }}
+                                              }
+
+                                              // Après la c'est la table Historiques qu'on met à jour
+                                                db.transaction(tx => {
+                                                  tx.executeSql(
+                                                    "SELECT * FROM Historiques",
+                                                    [],
+                                                    (_, { rows }) => {
+
+                                                      let taille;
+                                                      if(rows.length <= 0) {
+                                                        taille = 1;
+                                                      } else {
+                                                        taille = rows.length;
+                                                      }
+
+                                                      if (taille > 0) {
+                                                        for(let i=0; i<taille; i++){
+                                                            if(rows.length != 0){
+                                                              if(rows.item(i).Username == usernameStatic) {
+                                                                let id = rows.item(i).id;
+                                                                tx.executeSql(
+                                                                  "UPDATE Historiques SET Username = ? WHERE id = ?",
+                                                                  [username, id],
+                                                                  //() => {alert("table des Historiques mise à jour avec succès !")}
+                                                                )
+                                                            }}
+                                                  }
+
+                                              // Après la c'est la table Commentaires qu'on met à jour
+                                                db.transaction(tx => {
+                                                  tx.executeSql(
+                                                    "SELECT * FROM Commentaires",
+                                                    [],
+                                                    (_, { rows }) => {
+
+                                                      let taille;
+                                                      if(rows.length <= 0) {
+                                                        taille = 1;
+                                                      } else {
+                                                        taille = rows.length;
+                                                      }
+
+                                                      if (taille > 0) {
+                                                        for(let i=0; i<taille; i++){
+                                                            if(rows.length != 0){
+                                                              if(rows.item(i).Username == usernameStatic /*&& rows.item(i).Profil == profLinkStatic*/) {
+                                                                let id = rows.item(i).id;
+                                                                tx.executeSql(
+                                                                  "UPDATE Commentaires SET Username = ?, Profil = ? WHERE id = ?",
+                                                                  [username, profLink, id],
+                                                                  //() => {alert("table des Commentaires mise à jour avec succès !")}
+                                                                )
+                                                            }}
+                                                  }
+
+                                                // Après la c'est la table Commandes qu'on met à jour
+                                                    db.transaction(tx => {
+                                                      tx.executeSql(
+                                                        "SELECT * FROM Commandes",
+                                                        [],
+                                                        (_, { rows }) => {
+
+                                                          let taille;
+                                                          if(rows.length <= 0) {
+                                                            taille = 1;
+                                                          } else {
+                                                            taille = rows.length;
+                                                          }
+
+                                                          if (taille > 0) {
+                                                            for(let i=0; i<taille; i++){
+                                                                if(rows.length != 0){
+                                                                  if(rows.item(i).Tel_Client == telStatic) {
+                                                                    let id = rows.item(i).id;
+                                                                    tx.executeSql(
+                                                                      "UPDATE Commandes SET Tel_Client = ? WHERE id = ?",
+                                                                      [tel, id],
+                                                                      //() => {alert("table des Commandes mise à jour avec succès !")}
+                                                                    )
+                                                                } else if (rows.item(i).Tel_Livreur == telStatic) {
+                                                                    let id = rows.item(i).id;
+                                                                    tx.executeSql(
+                                                                      "UPDATE Commandes SET Tel_Livreur = ? WHERE id = ?",
+                                                                      [tel, id],
+                                                                      //() => {alert("table des Commandes mise à jour avec succès !")}
+                                                                    )
+                                                                }}
+                                                      }
+
+                                                      // Après la c'est la table Recharges qu'on met à jour
+                                                          db.transaction(tx => {
+                                                            tx.executeSql(
+                                                              "SELECT * FROM Recharges",
+                                                              [],
+                                                              (_, { rows }) => {
+
+                                                                let taille;
+                                                                  if(rows.length <= 0) {
+                                                                    taille = 1;
+                                                                  } else {
+                                                                    taille = rows.length;
+                                                                  }
+
+                                                                if (taille > 0) {
+                                                                  for(let i=0; i<taille; i++){
+                                                                     if(rows.length != 0){
+                                                                       if(rows.item(i).Username == usernameStatic /*&& rows.item(i).Profil == profLinkStatic*/ && rows.item(i).Tel == telStatic) {
+                                                                       let id = rows.item(i).id;
+                                                                          tx.executeSql(
+                                                                            "UPDATE Recharges SET Username = ?, Profil = ?, Tel = ? WHERE id = ?",
+                                                                            [username, profLink, tel, id],
+                                                                            //() => {alert("table des Recharges mise à jour avec succès !")}
+                                                                          )
+                                                                      }}
+                                                            }
+
+                                                      // Après la c'est la table Livreurs qu'on met à jour
+                                                          db.transaction(tx => {
+                                                            tx.executeSql(
+                                                              "SELECT * FROM Livreurs",
+                                                              [],
+                                                              (_, { rows }) => {
+
+                                                                let taille;
+                                                                  if(rows.length <= 0) {
+                                                                    taille = 1;
+                                                                  } else {
+                                                                    taille = rows.length;
+                                                                  }
+
+                                                                if (taille > 0) {
+                                                                  for(let i=0; i<taille; i++){
+                                                                      if(rows.length != 0){
+                                                                        if(rows.item(i).Tel == telStatic) {
+                                                                          let id = rows.item(i).id;
+                                                                          tx.executeSql(
+                                                                            "UPDATE Livreurs SET Tel = ? WHERE id = ?",
+                                                                            [tel, id],
+                                                                            //() => {alert("table des Livreurs mise à jour avec succès !")}
+                                                                          )
+                                                                      }}
+                                                            }
+
+                                                       // Enfin on met à jour la table Users
+                                                            db.transaction(tx => {
+                                                              tx.executeSql(
+                                                                "UPDATE Users SET Username = ?, Email = ?, Password = ?, Tel = ?, Gender = ?, Profil = ? WHERE id = ?",
+                                                                [username, email, password, tel, gender, profLink, idUser],
+                                                                (_, results) => {
+                                                                  // Validation de la modification dans la base de données
+                                                                  // alert(usernameStatic+" "+emailStatic+" "+passwordStatic+" "+genderStatic+" "+profLinkStatic+" "+telStatic)
+                                                                  alert('Informations mises à jour avec succès');
+                                                                  refreshAsync("activeUser", username, profLink);
+                                                                  renderData();
+                        
+                                                                  navigation.reset({
+                                                                    index: 0,
+                                                                    routes: [{ name: 'Home' }, { name: 'Your Profil' }],
+                                                                  });
+                                                                    // navigation.navigate("Home");
+                                                                    // navigation.navigate("Your Profil");
+                                                                  
+                                                                },
+                                                                (_, error) => {
+                                                                  console.log("Error fetching user details:", error);
+                                                                  alert("Error fetching user details: " + error);
+                                                                }
+                                                              )});       
+
+                                                          }})})
+
+                                                          }})})
+
+                                                    }})})
+
+                                                }})})
+
+                                                }})})
+
+                                            }})})
+                                           // setUpdateNext(1);
+                                          }})});
+                                         // updateNotifications(); 
+
+                                         
+
+
+                                            }
+                                          }
+                                        }})
+
                                   });
   
   
@@ -200,10 +501,15 @@ export default function UpdateProfil() {
   return (
     <View style={{backgroundColor: 'white', height: '100%'}}>
 
+      {/* View qui affiche le loading de la page */}
+      {loading && <View style={{position: 'absolute', width: "100%", height: '100%', zIndex: 200, backgroundColor: "rgba(0, 0, 0, 0.752)", justifyContent: 'center', alignItems: 'center'}}>
+                        <ActivityIndicator size={75} color={"yellowgreen"} />
+                    </View>}
+
 <View style={{
            position: 'absolute',
            //borderWidth: 3,
-           width: '45vw',
+           width: '45%',
            height: '25%',
            zIndex: -1,
            borderBottomRightRadius: 250,
@@ -212,7 +518,7 @@ export default function UpdateProfil() {
          <View style={{
            position: 'absolute',
            //borderWidth: 3,
-           width: '100vw',
+           width: '100%',
            height: '48%',
            zIndex: -1,
            borderTopLeftRadius: 250,
@@ -256,6 +562,9 @@ export default function UpdateProfil() {
 
                     <Text style={{fontWeight: 'bold'}}>Email:</Text>
                     <TextInput value={email} 
+
+                      keyboardType="email-address"
+                      autoCapitalize="none"
                     
                     onChangeText={setEmail} 
                     
@@ -290,6 +599,8 @@ export default function UpdateProfil() {
                     //     setTel(query);
                     //   }
                     //  }}
+
+                    keyboardType="numeric"
 
                     style={{
                        backgroundColor: 'rgb(200, 206, 182)',

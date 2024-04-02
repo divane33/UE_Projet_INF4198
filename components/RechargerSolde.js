@@ -1,16 +1,82 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, ScrollView } from 'react-native';
+import * as SQLite from 'expo-sqlite';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 
 export default function RechargerSolde() {
 
   const [montant, setMontant] = useState(0);
+  const [profilUser, setProfilUser] = useState("");
+  const [username, setUsername] = useState("");
+  const [tel, setTel] = useState("");
+
+  const navigation = useNavigation();
+
+  // constante pour ouvrir ma base de données GFOOD 
+  const db = SQLite.openDatabase("GFOOD_db");
+
+  // Fonction permettant de récupérer le profil, l'username et le téléphone de l'utilisateur dans le localstorage
+  async function getInfos() {
+    let profil = await AsyncStorage.getItem("LienProfil");
+    let nom = await AsyncStorage.getItem("activeUser");
+    let téléphone = await AsyncStorage.getItem("Tel");
+
+    setProfilUser(profil);
+    setUsername(nom);
+    setTel(téléphone);
+  }
 
   // Fonction qui vérifit le montant entré par l'utilisateur
   const checkMontant = () => {
-        if (montant < 500) {
-          alert ("Vous devez entrer un montant supérieur ou égale à 500");
+        if (!(montant >= 500) || (montant > 500000)) {
+          alert ("Vous devez entrer un montant supérieur ou égale à 500, et aussi n'entrez que des nombres dans le champ. Le montant maximum de dépôt est de 500 000 fcfa");
+        }
+        else {
+            // alert ("Montant validé et prise en compte !");
+            let dat = new Date();
+            let date = dat.getDate() +"/"+ (dat.getMonth()+1) +"/"+ dat.getFullYear();
+
+            let heure = dat.getHours()+":"+dat.getMinutes();
+
+            // Requête permettant d'ajouter la demande dans la table Recharges de la BD
+                  db.transaction((tx) => {
+                      tx.executeSql(
+                      "INSERT INTO Recharges (Profil, Username, Tel, Montant) VALUES (?,?,?,?)",
+                      [profilUser, username, tel, montant]
+                      )
+                  } );
+
+              // Requête permettant d'ajouter l'historique de la recharge dans la BD
+                  db.transaction((tx) => {
+                      tx.executeSql(
+                      "INSERT INTO Historiques (Username, Type, DateHistorique, Heure, Montant) VALUES (?,?,?,?,?)",
+                      [username, "recharge", date, heure, montant]
+                      )
+                  } );
+
+                  alert("Demande de recharge éffectuée avec succès !");
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'Home' }],
+                  });
+
         }
   }
+
+  useEffect(() => {
+
+        // Crée la table Recharges s'il n'en existe pas
+        db.transaction(tx => {
+          tx.executeSql(
+            'CREATE TABLE IF NOT EXISTS Recharges (id INTEGER PRIMARY KEY AUTOINCREMENT, Profil TEXT, Username TEXT, Tel TEXT, Montant REAL)',
+            [],
+          );
+        });
+
+        getInfos();
+
+  }, [])
 
 
   return (
@@ -19,7 +85,7 @@ export default function RechargerSolde() {
          <View style={{
            position: 'absolute',
            //borderWidth: 3,
-           width: '45vw',
+           width: '45%',
            height: '25%',
            zIndex: -1,
            borderBottomRightRadius: 250,
@@ -28,7 +94,7 @@ export default function RechargerSolde() {
          <View style={{
            position: 'absolute',
            //borderWidth: 3,
-           width: '100vw',
+           width: '100%',
            height: '48%',
            zIndex: -1,
            borderTopLeftRadius: 250,
@@ -87,6 +153,8 @@ export default function RechargerSolde() {
                  fontSize: 17,
                  marginTop: 10
                }}
+
+               keyboardType="numeric"
                
                   onChangeText = {setMontant}
                

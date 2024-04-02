@@ -38,6 +38,14 @@ export default function SignUpPage() {
           );
         });
 
+        // Crée la table Livreurs s'il n'en existe pas (Cette table regroupe les différents et leurs nbres de livraisons qu'ils ont à faire)
+        db.transaction(tx => {
+          tx.executeSql(
+            'CREATE TABLE IF NOT EXISTS Livreurs (id INTEGER PRIMARY KEY AUTOINCREMENT, Tel REAL, NbCommandes REAL)',
+            [],
+          );
+        });
+
         // // Partie pour supprimer une table de la BD
         // db.transaction(tx => {
         //   tx.executeSql(
@@ -81,8 +89,14 @@ export default function SignUpPage() {
                                       if (rows.length > 0) {
                                         for(let i=0; i<rows.length; i++){
                                             
-                                            if(rows.item(i).Username == username || rows.item(i).Email == email){
-                                                alert("Changer votre Username et votre Email s'il vous plaît !");
+                                            if(rows.item(i).Username == username){
+                                                alert("Veuillez changer votre Username s'il vous plaît !");
+                                                return
+                                            }else if (rows.item(i).Email == email) {
+                                                alert("Veuillez changer votre adresse Email s'il vous plaît !");
+                                                return
+                                            }else if (rows.item(i).Tel == tel) {
+                                                alert("Veuillez changer votre numéro de téléphone s'il vous plaît !");
                                                 return
                                             }else{
                                                     if(i == rows.length-1){ 
@@ -92,7 +106,24 @@ export default function SignUpPage() {
                                                             "INSERT INTO Users (Username, Email, Password, Tel, Solde, Gender, Profil) VALUES (?,?,?,?,?,?,?)",
                                                             [username, email, password, tel, solde, gender, profilLink]
                                                             )
-                                                         } );
+                                                          } );
+
+                                                          db.transaction((tx) => {
+                                                            tx.executeSql(
+                                                            "INSERT INTO Notifications (User, Notif, AEnvoyé, Profil) VALUES (?,?,?,?)",
+                                                            [username, "oui", "non", profilLink],
+                                                            //() => {alert("Table de notifications mise à jour")}
+                                                            )
+                                                          } );
+
+                                                         if (gender === "Livreur") {
+                                                                db.transaction((tx) => {
+                                                                  tx.executeSql(
+                                                                  "INSERT INTO Livreurs (Tel, NbCommandes) VALUES (?,?)",
+                                                                  [tel, 0]
+                                                                  )
+                                                                } );
+                                                         }
                         
                                                         alert("Informations sauvegardées avec succès. Vous avez 1000 Fcfa de Bonus pour votre inscription !");
                                                         navigation.navigate('LogIn');
@@ -107,6 +138,23 @@ export default function SignUpPage() {
                                               [username, email, password, tel, solde, gender, profilLink]
                                               )
                                            } );
+
+                                           db.transaction((tx) => {
+                                            tx.executeSql(
+                                            "INSERT INTO Notifications (User, Notif, AEnvoyé, Profil) VALUES (?,?,?,?)",
+                                            [username, "oui", "non", profilLink],
+                                            //() => {alert("Table de notifications mise à jour")}
+                                            )
+                                          } );
+
+                                           if (gender === "Livreur") {
+                                              db.transaction((tx) => {
+                                                tx.executeSql(
+                                                "INSERT INTO Livreurs (Tel, NbCommandes) VALUES (?,?)",
+                                                [tel, 0]
+                                                )
+                                              } );
+                                            }
           
                                           alert("Informations sauvegardées avec succès. Vous avez 1000 Fcfa de Bonus pour votre inscription !");
                                           navigation.navigate('LogIn');
@@ -190,6 +238,9 @@ export default function SignUpPage() {
                   borderRadius: 20,
                   marginBottom: 10
                   }}
+
+                  keyboardType="email-address"
+                  autoCapitalize="none"
                   
                   onChangeText = {setEmail}
                   
@@ -209,13 +260,15 @@ export default function SignUpPage() {
                   />  
 
                   <Text style={{fontSize: 16, fontWeight: 'bold', marginBottom: 4, marginTop: 10}}>Téléphone:</Text>
-                <TextInput placeholder='ex: 600000000 ou 00000000' style={{
+                <TextInput placeholder='ex: 600000000' style={{
                   backgroundColor:'rgb(211, 209, 209)', 
                   paddingHorizontal: 20, 
                   paddingVertical: 6, 
                   width: '80%', 
                   borderRadius: 20
                   }}
+
+                  keyboardType="numeric"
                   
                    onChangeText = {(query) => {
                      if(query >= 0 && query.length > 7){

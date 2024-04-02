@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import React, {useState, useEffect} from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {createDrawerNavigator} from '@react-navigation/drawer';
@@ -28,6 +28,10 @@ import RechargerSolde from './RechargerSolde';
 import Commandes from './Commandes';
 import CentreAdmin from './CentreAdmin';
 import LivraisonsAF from './LivraisonsAF';
+import GererProduits from './GererProduits';
+import ModifierProduit from './ModifierProduit';
+import PageRecharge from './PageRecharge';
+import MessagesRecus from './MessagesRecus';
 
 
 const Stack = createNativeStackNavigator();
@@ -44,40 +48,46 @@ function CustomDrawerContent(props) {
      const [displayLivreur, setDisplayLivreur] = useState("flex");
      const [displayAdmin, setDisplayAdmin] = useState("flex");
 
+     const [optionsButtons, setOptionsButtons] = useState(false);
+
   const [profilUser, setProfilUser] = useState();
   const [solde, setSolde] = useState();
-  let lien; let genreType; let money;
 
   const getlinkProf = async () => {
     
         try {
             
+          let lien; let genreType; let money;
           lien = await AsyncStorage.getItem("LienProfil");
           genreType = await AsyncStorage.getItem("Genre");
           money = await AsyncStorage.getItem("Solde");
+          setSolde(money);
+          setProfilUser(lien);
+          setOptionsButtons(true);
+
+              if(genreType === "Client") {
+                setDisplayLivreur("none");
+                setDisplayAdmin("none");
+                }else if(genreType === "Livreur"){
+                  setDisplayLivreur("flex");
+                  setDisplayAdmin("none");
+                }else{
+                  setDisplayLivreur("none");
+                  setDisplayAdmin("flex");
+                }
 
         } catch (error) {
           alert(error)
         }
-
-        setProfilUser(lien);
-        setSolde(money);
-
-        if(genreType === "Client") {
-           setDisplayLivreur("none");
-           setDisplayAdmin("none");
-        }else if(genreType === "Livreur"){
-          setDisplayLivreur("flex");
-          setDisplayAdmin("none");
-        }else{
-          setDisplayLivreur("none");
-          setDisplayAdmin("flex");
-        }
   }
 
   useEffect(()=>{
-    setInterval(() => {
+    let i=0;
+    let inter = setInterval(() => {
      getlinkProf();
+        if(i++ == 2){
+          clearInterval(inter);
+        }
     }, 2000)
   }, []);
 
@@ -103,7 +113,7 @@ function CustomDrawerContent(props) {
             color: 'orangered',
             fontWeight: 'bold',
             fontSize: 18,
-          }}>{solde}Fcfa</Text></Text>
+          }}>{solde} Fcfa</Text></Text>
       </View> 
 
       {/* <TouchableOpacity
@@ -141,6 +151,10 @@ function CustomDrawerContent(props) {
        >Home</Text>
     </TouchableOpacity> */}
 
+   {!optionsButtons && <ActivityIndicator style={{marginTop: '50%'}} size={50} color={"grey"} />}
+   {!optionsButtons && <Text style={{ fontSize: 25, fontWeight: 'bold', fontStyle: 'italic', color: 'grey'}}>Chargement...</Text>}
+
+   {optionsButtons && (<>
     <TouchableOpacity
       
       style={{
@@ -426,6 +440,7 @@ function CustomDrawerContent(props) {
          }}
         >Centre Administrateur</Text>
     </TouchableOpacity>
+    </>)}
 
 
 
@@ -448,7 +463,7 @@ function CustomDrawerContent(props) {
            onPress = {() => {
             navigation.reset({
               index: 0,
-              routes: [{ name: ' ' }],
+              routes: [{ name: ' ' }, { name: 'LogIn' }],
             });
            }}
 
@@ -532,11 +547,9 @@ export default function Navigation() {
                 <Stack.Navigator screenOptions={{
                   headerTintColor: 'white'
                 }}>
-
                     
                     
                     
-                    <Stack.Screen name='Home' component={DrawerRoutes} options={{headerShown: false}} />
                     <Stack.Screen name=' ' component={LaunchingPage} options={{headerShown: false}}/>
                     <Stack.Screen name='SignUp' component={SignUpPage} options={{
                       headerStyle: {
@@ -564,8 +577,54 @@ export default function Navigation() {
                       },
                       title: "Se Connecter"
                     }}/>
+
+                    <Stack.Screen name='Home' component={DrawerRoutes} options={{headerShown: false}} />
+
+                    <Stack.Screen name='Messaging support' component={ChatBox} options={{
+                      headerStyle: {
+                        backgroundColor: 'rgb(10, 146, 10)',
+                        //backgroundColor: 'rgba(1, 27, 1, 0.808)',
+                      },
+                      headerLargeStyle: {
+                        color: 'white'
+                      },
+                      headerTitleStyle: {
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: 20
+                      },
+                      title: "Support de messagerie"
+                    }} />
                    
-                  
+                   <Stack.Screen name='Centre Administrateur' component={CentreAdmin} options={{
+                      headerStyle: {
+                        backgroundColor: 'rgb(139, 82, 185)',
+                        //backgroundColor: 'rgba(1, 27, 1, 0.808)',
+                      },
+                      headerLargeStyle: {
+                        color: 'white'
+                      },
+                      headerTitleStyle: {
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: 20
+                      },
+                    }} />
+
+<Stack.Screen name='Messages reçus' component={MessagesRecus} options={{
+                      headerStyle: {
+                        backgroundColor: 'rgb(164, 182, 290)',
+                        //backgroundColor: 'rgba(1, 27, 1, 0.808)',
+                      },
+                      headerLargeStyle: {
+                        color: 'white'
+                      },
+                      headerTitleStyle: {
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: 20
+                      }
+                    }} />
                    
                     <Stack.Screen name='Add Food' component={AddFood} options={{
                       headerStyle: {
@@ -579,7 +638,8 @@ export default function Navigation() {
                         color: 'white',
                         fontWeight: 'bold',
                         fontSize: 20
-                      }
+                      },
+                      title: 'Ajouter un produit'
                     }} />
 
                    <Stack.Screen name='Your Foods' component={YourFoods} options={{
@@ -676,21 +736,7 @@ export default function Navigation() {
                       }
                     }} />
 
-                    <Stack.Screen name='Messaging support' component={ChatBox} options={{
-                      headerStyle: {
-                        backgroundColor: 'rgb(10, 146, 10)',
-                        //backgroundColor: 'rgba(1, 27, 1, 0.808)',
-                      },
-                      headerLargeStyle: {
-                        color: 'white'
-                      },
-                      headerTitleStyle: {
-                        color: 'white',
-                        fontWeight: 'bold',
-                        fontSize: 20
-                      },
-                      title: "Support de messagerie"
-                    }} />
+                    
 
                     <Stack.Screen name='Votre Panier' component={Panier} options={{
                       headerStyle: {
@@ -737,20 +783,7 @@ export default function Navigation() {
                       },
                     }} />
 
-                     <Stack.Screen name='Centre Administrateur' component={CentreAdmin} options={{
-                      headerStyle: {
-                        backgroundColor: 'rgb(192, 118, 7)',
-                        //backgroundColor: 'rgba(1, 27, 1, 0.808)',
-                      },
-                      headerLargeStyle: {
-                        color: 'white'
-                      },
-                      headerTitleStyle: {
-                        color: 'white',
-                        fontWeight: 'bold',
-                        fontSize: 20
-                      },
-                    }} />
+                     
 
                      <Stack.Screen name='Livraisons à faire' component={LivraisonsAF} options={{
                       headerStyle: {
@@ -781,6 +814,52 @@ export default function Navigation() {
                         fontSize: 20
                       },
                       title: "Recupération MDP"
+                    }} />
+
+                    <Stack.Screen name='GererProduits' component={GererProduits} options={{
+                      headerStyle: {
+                        backgroundColor: 'rgb(164, 142, 180)',
+                        //backgroundColor: 'rgba(1, 27, 1, 0.808)',
+                      },
+                      headerLargeStyle: {
+                        color: 'white'
+                      },
+                      headerTitleStyle: {
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: 20
+                      }
+                    }} />
+
+                  <Stack.Screen name='ModifierProduit' component={ModifierProduit} options={{
+                      headerStyle: {
+                        backgroundColor: 'rgb(164, 142, 180)',
+                        //backgroundColor: 'rgba(1, 27, 1, 0.808)',
+                      },
+                      headerLargeStyle: {
+                        color: 'white'
+                      },
+                      headerTitleStyle: {
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: 20
+                      }
+                    }} 
+                  />
+
+                   <Stack.Screen name='Gerer les recharges' component={PageRecharge} options={{
+                      headerStyle: {
+                        backgroundColor: 'rgb(164, 142, 180)',
+                        //backgroundColor: 'rgba(1, 27, 1, 0.808)',
+                      },
+                      headerLargeStyle: {
+                        color: 'white'
+                      },
+                      headerTitleStyle: {
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: 20
+                      }
                     }} />
                     
                     

@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView, TextInput } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import SelectDropdown from 'react-native-select-dropdown';
 import * as SQLite from 'expo-sqlite';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 import { Icon, List } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 
-export default function AddFood() {
+export default function ModifierProduit() {
+
+  // Constante de chargement
+  const [loading, setLoading] = useState(true);
 
   // Constante de navigation
   const navigation = useNavigation();
@@ -18,6 +22,7 @@ export default function AddFood() {
   const db = SQLite.openDatabase("GFOOD_db");
 
   // Constantes du formulaire
+   const [idProduit, setIdProduit] = useState();
    const [name, setName] = useState();
    const [description, setDescription] = useState();
    const [prix, setPrix] = useState();
@@ -34,14 +39,13 @@ export default function AddFood() {
       const [show, setShow] = useState(false);
    //alert(date.getHours()+":"+date.getMinutes())
       
-
-      const onChange = (event, selectedDate) => {
-        const currentDate = selectedDate || date;
-        setShow(Platform.OS === 'ios');
-        setDate(currentDate);
-        setActualDate(currentDate.getDate() +"/"+ parseInt(currentDate.getMonth()+1) +"/"+ currentDate.getFullYear());
-        //alert(currentDate.getDate() +"/"+ parseInt(currentDate.getMonth()+1) +"/"+ currentDate.getFullYear());
-      };
+   const onChange = (event, selectedDate) => {
+    const currentDate = selectedDate || date;
+    setShow(Platform.OS === 'ios');
+    setDate(currentDate);
+    setActualDate(currentDate.getDate() +"/"+ parseInt(currentDate.getMonth()+1) +"/"+ currentDate.getFullYear());
+    //alert(currentDate.getDate() +"/"+ parseInt(currentDate.getMonth()+1) +"/"+ currentDate.getFullYear());
+  };
 
       const showDatepicker = () => {
         setShow(true);
@@ -96,115 +100,46 @@ export default function AddFood() {
             throw error;
          }
    }
-
-   // Fonction pour importer une image du téléphone
-   const selectImage = () => {
-        const options = {
-          mediaType: 'photo',
-          includeBase64: false,
-          maxHeight: 2000,
-          maxWidth: 2000,
-        };
-        ImagePicker.launchImageLibrary(options, (response) => {
-          if (response.didCancel) {
-            console.log('User cancelled image picker');
-          } else if (response.error) {
-            console.log('Image picker error: ', response.error);
-          } else {
-            let imageUri = response.uri || response.assets?.[0]?.uri;
-            alert(imageUri);
-            setSelectedImage(imageUri);
-            setImageLink(imageUri);
-          }
-        });
-  };
-
-     // Fonction pour prendre une photo avec la caméra du téléphone
-     const takePicture = () => {
-
-            const options = {
-              mediaType: 'photo',
-              includeBase64: false,
-              maxHeight: 2000,
-              maxWidth: 2000,
-            };
-          
-            launchCamera(options, response => {
-              if (response.didCancel) {
-                console.log('User cancelled camera');
-              } else if (response.error) {
-                console.log('Camera Error: ', response.error);
-              } else {
-                //let imageUri = response.uri || response.assets?.[0]?.uri;
-                //setSelectedImage(imageUri);
-                //console.log(imageUri);
-                alert(response.uri);
-              }
-            });
-
-     }
-
-     // Fonction pour prendre une photo
-     const openCamera = async () => {
-       const result = await ImagePicker.launchCamera();
-       alert (result?.assets[0]?.uri);
-     }
+            
 
 
-     // Fonction pour enregistrer un nouveau produit dans la BD
-     const saveProduit = () => {
-        if(!name || !description || !prix || !quantité || !solde || !categorie || !imageLink){
+     // Fonction pour mettre à jour les infos d'un produit dans la BD
+     const updateProduit = () => {
+        if(name.length==0 || description.length==0 || prix.length==0 || quantité.length==0 || solde.length==0 || categorie.length==0 || imageLink.length==0){
            alert("S'il vous plaît, remplissez tous les champs !")
         }
         else if (!(prix > 0) || !(quantité >= 1) || !(solde >= 0)){
              alert ("Veuillez revérifier s'il n'y a aucune érreur au niveau du prix, de la quantité ou du solde !");
         }
+        else if (!actualDate) {
+             setActualDate(dat.getDate() +"/"+ dat.getMonth() +"/"+ dat.getFullYear());
+             updateProduit();
+        }
         else { 
 
-          // Requête pour ajouter le produit par défaut: pain
-              db.transaction((tx) => {
+         // alert("Tous les champs ont été bien remplis, merci !")
 
-                tx.executeSql(
-                  "SELECT * FROM Produits",
-                  [],
-                  (_, { rows }) => {
-                    if (rows.length > 0) {
-                       for(let i=0; i < rows.length; i++) {
-                          if (rows.item(i).Nom == name) {
-                            alert("Veuillez modifier le nom du produit s'il vous plaît !")
-                            return
-                          }
-                       }
-                       let datejour;
-                          if(!actualDate) {
-                            // setActualDate(dat.getDate() +"/"+ dat.getMonth() +"/"+ dat.getFullYear());
-                            datejour = dat.getDate() +"/"+ (dat.getMonth()+1) +"/"+ dat.getFullYear();
-                          }else {
-                            datejour = actualDate;
-                          }
-                        // alert("Tous les champs ont été bien remplis, merci !")
+            try {
+                  db.transaction((tx) => {
+                  tx.executeSql(
+                  "UPDATE Produits SET Nom = ?, Description = ?, DatePublication = ?, Categorie = ?, Image = ?, Prix = ?, Quantité = ?, Solde = ? WHERE id = ?",
+                  [name, description, actualDate, categorie, imageLink, prix, quantité, solde, idProduit]
+                  )
+              } );
 
-                          db.transaction((tx) => {
-                            tx.executeSql(
-                            "INSERT INTO Produits (Nom, Description, DatePublication, Categorie, Image, Prix, Commentaires, Quantité, Solde) VALUES (?,?,?,?,?,?,?,?,?)",
-                            [name, description, datejour, categorie, imageLink, prix, "", quantité, solde]
-                            )
-                        } );
-
-                        alert("Produit enregistré avec succès !");
-                        navigation.reset({
-                          index: 0,
-                          routes: [{ name: 'Home' },{ name: 'Centre Administrateur' },{ name: 'GererProduits' }, {name: 'Add Food'}],
-                        });
-                    }
-                  })
-            } );
-
-          
-          //  navigation.navigate("Home")
-          //  navigation.navigate("Centre Administrateur")
-          //  navigation.navigate("GererProduits")
-          //  navigation.navigate("Add Food")
+              alert("Produit mis à jour avec succès !");
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home' },{ name: 'Centre Administrateur' },{ name: 'GererProduits' }],
+              });
+              // navigation.navigate("Home")
+              // navigation.navigate("Centre Administrateur")
+              // navigation.navigate("GererProduits")
+              //navigation.navigate("ModifierProduit")
+          }
+          catch (error) {
+              alert("Une erreur est survenue lors de la mise à jour: "+error);
+          }
 
         }
      } 
@@ -240,46 +175,61 @@ export default function AddFood() {
       }
 
 
+   // Fonction pour récupérer et afficher des données de la BD
+ const renderData = async () => {
+    //alert(activeU);
+       try {
 
-     useEffect(()=>{
+                   const ac = await AsyncStorage.getItem("Produitàmodifier");
+
+                   db.transaction(tx => {
+                     tx.executeSql(
+                       "SELECT * FROM Produits WHERE Nom = ?",
+                       [ac],
+                       (_, { rows }) => {
+
+                               setIdProduit(rows.item(0).id);
+                               setName(rows.item(0).Nom);
+                               setDescription(rows.item(0).Description);
+                               setPrix(rows.item(0).Prix.toString());
+                               setQuantité(rows.item(0).Quantité.toString());
+                               setSolde(rows.item(0).Solde.toString());
+                               setActualDate(rows.item(0).DatePublication);
+                               setCategorie(rows.item(0).Categorie);
+                               setImageLink(rows.item(0).Image);
+
+                               setLoading(false);
+                          
+                       },
+                       (_, error) => {
+                         console.log("Error fetching user details:", error);
+                         alert("Error fetching user details: " + error);
+                       }
+                     );
+                   });
+          
+     
+   } catch (error) {
+     // Gérer l'erreur de sauvegarde
+   }
+}
+
+
+useEffect(()=>{
 
       defaultCatégories();
-
-     db.transaction(tx => {
-      tx.executeSql(
-          'CREATE TABLE IF NOT EXISTS Produits (id INTEGER PRIMARY KEY AUTOINCREMENT, Nom TEXT, Description TEXT, DatePublication TEXT, Categorie TEXT, Image TEXT, Prix REAL, Commentaires TEXT, Quantité INTEGER, Solde REAL)',
-          [],
-        // (_, error) => console.error('Erreur lors de la création de la table : ', error)
-        );
-      });
-
-      // Requête pour supprimer une table
-      // db.transaction(tx => {
-      //   tx.executeSql(
-      //     'DROP TABLE IF EXISTS Produits',
-      //     [],
-      //     (_, res) => {
-      //       alert('Table supprimée avec succès');
-      //     }
-      //   );
-      // });
-
-      // Crée la table Users s'il n'en existe pas
-      //  db.transaction(tx => {
-      //    tx.executeSql(
-      //      'CREATE TABLE IF NOT EXISTS Foods (id INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT, Description TEXT, Calorie TEXT, Date TEXT, Category TEXT, Image TEXT)',
-      //      [],
-      //     // (_, response) => alert('Table créée: ', response),
-      //     // (_, error) => alert('Erreur lors de la création de la table : ', error)
-      //    );
-      //  });
-
-   //createTable();
+      renderData();
 
  }, []);
 
   return (
     <View style={{backgroundColor: 'white', height: "100%"}}>
+
+       {/* View qui affiche le loading de la page */}
+       {loading && <View style={{position: 'absolute', width: "100%", height: '100%', zIndex: 200, backgroundColor: "rgba(0, 0, 0, 0.752)", justifyContent: 'center', alignItems: 'center'}}>
+                        <ActivityIndicator size={75} color={"violet"} />
+                    </View>}
+      
        <View style={{
            position: 'absolute',
            //borderWidth: 3,
@@ -316,7 +266,7 @@ export default function AddFood() {
            }}
 
            >
-             ( Veuillez remplir les différents champs ci-dessous pour ajouter un nouveau produit )
+             ( Veuillez remplir les différents champs ci-dessous pour mettre à jour votre produit )
            </Text>
 
            <View>
@@ -425,6 +375,8 @@ export default function AddFood() {
                         textAlign: 'center'
                       }}
 
+                      value={prix}
+
                       placeholderTextColor = {"rgb(240, 240, 240)"}
 
                       onChangeText = {setPrix}
@@ -442,6 +394,8 @@ export default function AddFood() {
                         marginBottom: '6%',
                         textAlign: 'center'
                       }}
+
+                      value={quantité}
 
                       placeholderTextColor = {"rgb(240, 240, 240)"}
 
@@ -461,6 +415,8 @@ export default function AddFood() {
                         textAlign: "center"
                       }}
 
+                      value = {solde}
+
                       placeholderTextColor = {"rgb(240, 240, 240)"}
 
                       onChangeText = {setSolde}
@@ -478,6 +434,8 @@ export default function AddFood() {
 
                   <SelectDropdown
                         data = {tabCategories} 
+
+                        defaultValue = {categorie}
 
                         onSelect = {(selectedItem, index) => {
                           setCategorie(selectedItem);
@@ -505,14 +463,37 @@ export default function AddFood() {
                 </View>
 
                 <Text style={{fontWeight: 'bold'}}>Ajoutez une image :</Text>
-                <Image style={{
+                {/* <Image style={{
                         width: '53%',
                         height: 190,
                         borderRadius: 100,
                         marginBottom: '5%',
                         marginTop: '7%'
                       }} source={imageLink ? {uri:imageLink} : require('../images/emptyImage.jpeg')}
-                    />
+                    /> */}
+                    {(imageLink == 7.0) && <Image style={{
+                            width: '53%',
+                            height: 190,
+                            borderRadius: 100,
+                            marginBottom: '5%',
+                            marginTop: '7%'
+                         }} source={require("../images/pain.jpg")} />}
+
+                         {(imageLink == 8.0) && <Image style={{
+                            width: '53%',
+                            height: 190,
+                            borderRadius: 100,
+                            marginBottom: '5%',
+                            marginTop: '7%'
+                         }} source={require("../images/pain1.jpeg")} />}
+
+                         {(imageLink != 7.0 && imageLink != 8.0) && <Image style={{
+                            width: '53%',
+                            height: 190,
+                            borderRadius: 100,
+                            marginBottom: '5%',
+                            marginTop: '7%'
+                         }} source={imageLink ? {uri:imageLink} : require('../images/emptyImage.jpeg')} />}
                 <View style={{
                   //borderWidth: 2,
                   flexDirection: 'row',
@@ -606,7 +587,7 @@ export default function AddFood() {
                      marginBottom: '16%'
                    }}
                    
-                     onPress = {saveProduit}
+                     onPress = {updateProduit}
 
                    >
                         <Text style={{
@@ -615,7 +596,7 @@ export default function AddFood() {
                           fontSize: 22,
                           color: 'white'
                         }}>
-                           Ajouter
+                           Mettre à jour
                         </Text>
                     </TouchableOpacity>
           

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView, RefreshControl } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Icon } from 'react-native-paper';
 import * as SQLite from 'expo-sqlite';
@@ -8,6 +8,9 @@ import { useNavigation } from '@react-navigation/native';
 export default function YourProfil() {
 
   const navigation = useNavigation();
+
+  // Constante de chargement
+  const [loading, setLoading] = useState(true);
 
   // constante pour ouvrir ma base de données GFOOD 
   const db = SQLite.openDatabase("GFOOD_db");
@@ -42,6 +45,8 @@ export default function YourProfil() {
                         setProfLink(rows.item(0).Profil);
                         setTel(rows.item(0).Tel);
                         setSolde(rows.item(0).Solde);
+
+                        setLoading(false);
                   
                 },
                 (_, error) => {
@@ -114,10 +119,15 @@ const [refreshing, setRefreshing] = useState(false);
   return (
     <View style={{backgroundColor: 'white', height:'100%'}}>
 
+      {/* View qui affiche le loading de la page */}
+      {loading && <View style={{position: 'absolute', width: "100%", height: '100%', zIndex: 200, backgroundColor: "rgba(0, 0, 0, 0.752)", justifyContent: 'center', alignItems: 'center'}}>
+                        <ActivityIndicator size={75} color={"yellowgreen"} />
+                    </View>}
+
 <View style={{
            position: 'absolute',
            //borderWidth: 3,
-           width: '45vw',
+           width: '45%',
            height: '25%',
            zIndex: -1,
            borderBottomRightRadius: 250,
@@ -126,7 +136,7 @@ const [refreshing, setRefreshing] = useState(false);
          <View style={{
            position: 'absolute',
            //borderWidth: 3,
-           width: '100vw',
+           width: '100%',
            height: '48%',
            zIndex: -1,
            borderTopLeftRadius: 250,
@@ -155,7 +165,7 @@ const [refreshing, setRefreshing] = useState(false);
                 }}
                 
                 >
-                  Ci-dessous, vous pouvez consulter informations
+                  Ci-dessous, vous pouvez consulter vos informations
               </Text>
             </View>
 

@@ -13,18 +13,6 @@ import Home from './Home';
 
 export default function LoginPage() {
 
-  // tableau contenant les catégories à ajouter par défaut
-  const tabCategorie = [
-    {
-      nom: "Produits Alimentaire",
-      image: require("../images/catégorie_alimentaire.jpg"),
-    },
-    {
-      nom: "Produits Electronique",
-      image: require("../images/catégorie_électronique.jpg"),
-    }
-  ]
-
   const storeData = async (key, value, profilL, genre, solde, tel) => {
     try {
       await AsyncStorage.setItem(key, value);
@@ -73,16 +61,9 @@ export default function LoginPage() {
    const db = SQLite.openDatabase("GFOOD_db");
 
    useEffect(()=>{
+     
          callrememberData();
 
-         // Crée la table Categorie s'il n'en existe pas
-          db.transaction(tx => {
-                tx.executeSql(
-                  'CREATE TABLE IF NOT EXISTS Categorie (id INTEGER PRIMARY KEY AUTOINCREMENT, Nom TEXT, Image TEXT)',
-                  [],
-                // (_, error) => console.error('Erreur lors de la création de la table : ', error)
-                );
-              });
        }, []);
 
 
@@ -105,7 +86,7 @@ export default function LoginPage() {
                                                   if(rows.item(i).Username == username && rows.item(i).Password == password){
                                                        alert("Connecté avec succès");
                                                        navigation.navigate('Home');
-                                                       storeData("activeUser", username, rows.item(i).Profil, rows.item(i).Gender, rows.item(i).Solde, rows.item(i).Tel);
+                                                       storeData("activeUser", username, rows.item(i).Profil, rows.item(i).Gender, rows.item(i).Solde.toString(), rows.item(i).Tel.toString());
                                                        if(casebox == 'checked'){
                                                           rememberData(username, password);
                                                        }
@@ -120,25 +101,6 @@ export default function LoginPage() {
                                             } else {
                                               alert("Il n'y a aucun utilisateur enregistré dans la Base de données. La BD est vide !");
                                               
-                                              db.transaction(tx => {
-                                                tx.executeSql(
-                                                  "SELECT * FROM Categorie",
-                                                  [],
-                                                  (_, { rows }) => {
-                                                    if (rows.length <= 0) {
-                                                        for( let elt of tabCategorie) {
-
-                                                                    db.transaction((tx) => {
-                                                                        tx.executeSql(
-                                                                        "INSERT INTO Categorie (Nom, Image) VALUES (?,?)",
-                                                                        [elt.nom, elt.image]
-                                                                        )
-                                                                    } );
-
-                                                        }
-                                                    }
-                                                  })
-                                                })
                                             }
                                           },
                                           (_, error) => {
