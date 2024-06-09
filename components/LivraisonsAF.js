@@ -50,7 +50,7 @@ export default function LivraisonsAF() {
                  
               // alert(rows.item(i).Tel_Client);
 
-              if((rows.item(i).Tel_Livreur == active) && (rows.item(i).Status == "En Cours...")) {
+              if(((rows.item(i).Tel_Livreur == active) && (rows.item(i).Status == "En Cours...")) || (rows.item(i).Tel_Livreur == active && rows.item(i).Renvoi == "oui")) {
                // alert(rows.item(i).Tel_Client);
                 tab.push({
                     ref: rows.item(i).Ref,
@@ -62,6 +62,8 @@ export default function LivraisonsAF() {
                     adresse: rows.item(i).AdresseLivraison,
                     total: rows.item(i).Total,
                     statut: rows.item(i).Status,
+                    renvoi: rows.item(i).Renvoi,
+                    motif: rows.item(i).Motif
                 })
               }
             }  
@@ -104,7 +106,9 @@ export default function LivraisonsAF() {
                         <Text style={{paddingHorizontal: 20, textAlign: 'center', marginTop: 5, fontSize: 20, fontWeight: 'bold'}}>Adresse_Livraison: <Text style={{fontSize: 17, fontWeight: '700', color: 'rgb(80, 78, 78)'}}>{commande.adresse}</Text></Text>
                         <Text style={{marginTop: 5, fontSize: 20, fontWeight: 'bold'}}>Total: <Text style={{fontSize: 17, fontWeight: '700', color: 'rgb(80, 78, 78)'}}>{commande.total} fcfa</Text></Text>            
                         <Text style={{marginTop: 5, fontSize: 20, fontWeight: 'bold'}}>Status: <Text style={{fontSize: 17, fontWeight: '700', color: 'rgb(80, 78, 78)'}}>{commande.statut}</Text></Text>
-                        <Text style={{
+                        {commande.renvoi == "oui" && <Text style={{marginTop: 5, fontSize: 20, fontWeight: 'bold'}}>Motif: <Text style={{fontSize: 17, fontWeight: '700', color: 'rgb(80, 78, 78)'}}>{commande.motif}</Text></Text>}
+                        {commande.renvoi == "oui" && <Text style={{fontStyle: "italic", fontSize: 18, color: "red", textAlign: "center", marginTop: 8, fontWeight: 'bold'}}>Commande non approuvée par le client</Text>}
+                        {commande.renvoi == "non" && <Text style={{
                           //borderWidth: 2,
                           paddingVertical: 10,
                           fontSize: 18,
@@ -119,7 +123,7 @@ export default function LivraisonsAF() {
                         
                         onPress={()=>{setDisplayView(true); setRefCommande(commande.ref); setCodeCommande(commande.code)}}
                           
-                        >Valider la livraison</Text>
+                        >Valider la livraison</Text>}
             
                       </View>
              )
@@ -243,6 +247,16 @@ export default function LivraisonsAF() {
                   fontStyle: "italic",
                   marginBottom: 20
                 }}>(Si la page est vierge, alors cela signifit que vous n'avez aucune commande à livrer)</Text>
+
+                <Text style={{
+                  textAlign: "center",
+                  paddingHorizontal: 30,
+                  fontSize: 15,
+                  fontStyle: "italic",
+                  marginBottom: 20,
+                  color: "red",
+                  fontWeight: 'bold'
+                }}>NB: Si une commande a été non approuvée, alors vous devez aller la récupérer chez le client</Text>
           </View>
 
           {afficherCommandes()}

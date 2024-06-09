@@ -4,7 +4,7 @@ import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView, ActivityIn
 import * as SQLite from 'expo-sqlite';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function Commandes() {
+export default function RejectCommandes() {
 
   // Constante du chargement
   const [loading, setLoading] = useState(true)
@@ -44,7 +44,7 @@ export default function Commandes() {
                    
                 // alert(rows.item(i).Tel_Client);
 
-                if(rows.item(i).Tel_Client == telUser) {
+                if(rows.item(i).Renvoi == "oui") {
                  // alert(rows.item(i).Tel_Client);
                   tab.unshift({
                       ref: rows.item(i).Ref,
@@ -97,30 +97,9 @@ export default function Commandes() {
                         <Text style={{fontSize: 17, textAlign: 'center', paddingHorizontal: 20}}>{commande.produits}</Text>
                         <Text style={{marginTop: 5, fontSize: 20, fontWeight: 'bold'}}>Date: <Text style={{fontSize: 17, fontWeight: '700', color: 'rgb(80, 78, 78)'}}>{commande.date}</Text></Text>
                         <Text style={{marginTop: 5, fontSize: 20, fontWeight: 'bold'}}>Tel_Client: <Text style={{fontSize: 17, fontWeight: '700', color: 'rgb(80, 78, 78)'}}>{commande.telClient}</Text></Text>
-                        <Text style={{marginTop: 5, fontSize: 20, fontWeight: 'bold'}}>Tel_Livreur: <Text style={{fontSize: 17, fontWeight: '700', color: 'rgb(80, 78, 78)'}}>{commande.telLivreur}</Text></Text>
-                        <Text style={{marginTop: 5, fontSize: 20, fontWeight: 'bold'}}>Code: <Text style={{fontSize: 17, fontWeight: '700', color: 'rgb(80, 78, 78)'}}>{commande.code}</Text></Text>
-                        <Text style={{paddingHorizontal: 20, textAlign: 'center', marginTop: 5, fontSize: 20, fontWeight: 'bold'}}>Adresse_Livraison: <Text style={{fontSize: 17, fontWeight: '700', color: 'rgb(80, 78, 78)'}}>{commande.adresse}</Text></Text>
                         <Text style={{marginTop: 5, fontSize: 20, fontWeight: 'bold'}}>Total: <Text style={{fontSize: 17, fontWeight: '700', color: 'rgb(80, 78, 78)'}}>{commande.total} fcfa</Text></Text>            
-                        <Text style={{marginTop: 5, fontSize: 20, fontWeight: 'bold'}}>Status: <Text style={{fontSize: 17, fontWeight: '700', color: 'rgb(80, 78, 78)'}}>{commande.statut}</Text></Text>
-                        {commande.renvoi == "oui" && <Text style={{marginTop: 5, fontSize: 20, fontWeight: 'bold'}}>Motif: <Text style={{fontSize: 17, fontWeight: '700', color: 'rgb(80, 78, 78)'}}>{commande.motif}</Text></Text>}
-                        {commande.renvoi == "oui" && <Text style={{fontStyle: "italic", fontSize: 18, color: "red", textAlign: "center", marginTop: 8, fontWeight: 'bold'}}>Commande non approuvée par le client</Text>}
-                        {(genre != "Administrateur" && commande.statut != "Terminé") && <Text style={{
-                          //borderWidth: 2,
-                          paddingVertical: 10,
-                          fontSize: 18,
-                          fontWeight: 'bold',
-                          width: '80%',
-                          textAlign: 'center',
-                          marginTop: 12,
-                          borderRadius: 10,
-                          backgroundColor: 'orangered',
-                          color: 'white'
-                        }}
-                        
-                              onPress = {() => {navigation.navigate("Messaging support")}}
-                          
-                        >Signaler un problème</Text>}
-                        {(commande.statut == "Terminé" && commande.renvoi == "non") && <Text style={{
+                        <Text style={{marginTop: 5, fontSize: 20, fontWeight: 'bold', color: "red"}}>Motif: <Text style={{fontSize: 17, fontWeight: '700', color: "red"}}>{commande.motif}</Text></Text> 
+                        <Text style={{
                           //borderWidth: 2,
                           paddingVertical: 10,
                           fontSize: 18,
@@ -136,9 +115,10 @@ export default function Commandes() {
                               onPress = {() => {/*navigation.navigate("Messaging support")*/
                                 setDisplayViewMotif(true);
                                 setRefProduit(commande.ref);
+                                setTel(commande.telClient);
                             }}
                           
-                        >Renvoyer la Commande</Text>}
+                        >Approuver le Rejet</Text>
             
                       </View>
              )
@@ -152,6 +132,7 @@ export default function Commandes() {
   const [displayViewMotif, setDisplayViewMotif] = useState(false);
   const [motif, setMotif] = useState("");
   const [refProduit, setRefProduit] = useState("");
+  const [tel, setTel] = useState();
 
   return (
     <View style={{backgroundColor: 'white', height: '100%'}}>
@@ -190,7 +171,7 @@ export default function Commandes() {
                   paddingHorizontal: '3%',
                   marginBottom: 20
                 }}>
-                    Veuillez s'il vous plaît écrire le motif du renvoi
+                    Veuillez s'il vous plaît entrer un montant de rembourssement pour le client ci-dessous
                 </Text>
                 <TextInput style={{
                   backgroundColor: "rgb(178, 178, 178)",
@@ -201,7 +182,8 @@ export default function Commandes() {
                 }} multiline={true}
                    numberOfLines={4}
                    onChangeText = {setMotif}
-                   placeholder='Ecriver votre motif ici'
+                   keyboardType="numeric"
+                   placeholder='Entrer un montant ici'
                    placeholderTextColor={"rgb(90, 90, 90)"}></TextInput>
                 <Text style={{
                   padding: 10,
@@ -216,24 +198,35 @@ export default function Commandes() {
                 }}
                 
                 onPress = {()=>{
-                  if(motif){db.transaction(tx => {
-                    tx.executeSql(
-                      "UPDATE Commandes SET Renvoi = ?, Motif = ? WHERE Ref = ?",
-                      ["oui", motif, refProduit],
-                    )
-                  });
+                  if(motif > 0){
+                        db.transaction((tx) => {
+                            tx.executeSql(
+                            "DELETE FROM Commandes WHERE Ref = ?",
+                            [refProduit]
+                            )
+                        } );
 
-                  navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'Home' }, {name: 'Vos Commandes'}],
-                  });}
+                        db.transaction(tx => {
+                            tx.executeSql(
+                              "UPDATE Users SET Solde = Solde+? WHERE Tel = ?",
+                              [motif, tel],
+                            );
+                          });
+
+                      alert("L'approbation a bien été validée !");
+
+                      navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Home' },{ name: 'Centre Administrateur' },{ name: 'Commandes non approuvées' }],
+                      });
+                }
                   else {
-                    alert("Veuillez écrire un motif du renvoi s'il vous plaît !");
+                    alert("Veuillez entrer un montant valide s'il vous plaît !");
                   }
                   //alert(refProduit)
                 }}
                 
-                >Envoyer</Text>
+                >Approuver</Text>
                 <Text style={{
                   padding: 10,
                   backgroundColor: "rgb(100,100,168)",
@@ -247,7 +240,7 @@ export default function Commandes() {
                   marginBottom: 20
                 }}
                 
-                onPress = {()=>{setDisplayViewMotif(false); setMotif("")}}
+                onPress = {()=>{setDisplayViewMotif(false); setMotif()}}
 
                 >Annuler</Text>
             </View>
@@ -260,7 +253,7 @@ export default function Commandes() {
            height: '25%',
            zIndex: -1,
            borderBottomRightRadius: 250,
-           backgroundColor: 'rgb(231, 209, 177)'
+           backgroundColor: 'rgb(216, 195, 231)'
          }}></View>
          <View style={{
            position: 'absolute',
@@ -269,7 +262,7 @@ export default function Commandes() {
            height: '48%',
            zIndex: -1,
            borderTopLeftRadius: 250,
-           backgroundColor: 'rgb(231, 209, 177)',
+           backgroundColor: 'rgb(216, 195, 231)',
            bottom: 0,
            right: 0
          }}></View>
@@ -281,12 +274,12 @@ export default function Commandes() {
                   textAlign: 'center',
                   fontWeight: 'bold',
                   marginTop: '10%',
-                  color: 'rgb(126, 77, 4)',
+                  color: 'rgb(62, 18, 94)',
                   fontStyle: 'italic',
                   paddingHorizontal: '3%',
                   marginBottom: 20
                 }}>
-                    Retrouvez vos commandes ci-dessous
+                    Retrouvez les commandes non approuvées par les clients ci-dessous
                 </Text>
                 <Text style={{
                   marginBottom: 30,
@@ -295,8 +288,8 @@ export default function Commandes() {
                   textAlign: 'center',
                   paddingHorizontal: 13,
                   marginTop: 10,
-                  color: 'rgb(126, 77, 4)',
-                  }}>(Si la page est vierge, alors cela signifit que vous n'avez aucune commande pour le moment)</Text>
+                  color: 'rgb(62, 18, 94)',
+                  }}>(Si la page est vierge, alors cela signifit qu'il n'y a aucune commande non approuvée)</Text>
           </View>
 
           {afficherHistoriques()}

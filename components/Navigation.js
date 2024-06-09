@@ -32,6 +32,7 @@ import GererProduits from './GererProduits';
 import ModifierProduit from './ModifierProduit';
 import PageRecharge from './PageRecharge';
 import MessagesRecus from './MessagesRecus';
+import RejectCommandes from './RejectCommandes';
 
 
 const Stack = createNativeStackNavigator();
@@ -848,6 +849,21 @@ export default function Navigation() {
                   />
 
                    <Stack.Screen name='Gerer les recharges' component={PageRecharge} options={{
+                      headerStyle: {
+                        backgroundColor: 'rgb(164, 142, 180)',
+                        //backgroundColor: 'rgba(1, 27, 1, 0.808)',
+                      },
+                      headerLargeStyle: {
+                        color: 'white'
+                      },
+                      headerTitleStyle: {
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: 20
+                      }
+                    }} />
+
+                    <Stack.Screen name='Commandes non approuvées' component={RejectCommandes} options={{
                       headerStyle: {
                         backgroundColor: 'rgb(164, 142, 180)',
                         //backgroundColor: 'rgba(1, 27, 1, 0.808)',

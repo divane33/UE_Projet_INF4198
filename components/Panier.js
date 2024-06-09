@@ -451,8 +451,8 @@ export default function Panier() {
                   // Requête permettant d'ajouter la commande dans la BD
                       db.transaction((tx) => {
                         tx.executeSql(
-                        "INSERT INTO Commandes (Ref, DateCommande, Tel_Livreur, Tel_Client, Status, Produits, Code, AdresseLivraison, Total) VALUES (?,?,?,?,?,?,?,?,?)",
-                        [ref, date, LivreurMinTel, telClient, "En Cours...", messageProduitsCommandés, code, adresseLivraison, coutAchatTotal]
+                        "INSERT INTO Commandes (Ref, DateCommande, Tel_Livreur, Tel_Client, Status, Produits, Code, AdresseLivraison, Total, Renvoi, Motif) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                        [ref, date, LivreurMinTel, telClient, "En Cours...", messageProduitsCommandés, code, adresseLivraison, coutAchatTotal, "non", ""]
                         )
                     } );
 

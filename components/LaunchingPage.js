@@ -133,10 +133,18 @@ export default function LaunchingPage() {
               });
 
 
+        // db.transaction(tx => {
+        //   tx.executeSql(
+        //     "DROP TABLE IF EXISTS Commandes",
+        //     [],
+        //   // (_, error) => console.error('Erreur lors de la création de la table : ', error)
+        //   );
+        // });
+
           // Crée la table Commandes s'il n'en existe pas
               db.transaction(tx => {
                 tx.executeSql(
-                  'CREATE TABLE IF NOT EXISTS Commandes (id INTEGER PRIMARY KEY AUTOINCREMENT, Ref TEXT, DateCommande TEXT, Tel_Livreur REAL, Tel_Client REAL, Status TEXT, Produits TEXT, Code TEXT, AdresseLivraison TEXT, Total REAL)',
+                  'CREATE TABLE IF NOT EXISTS Commandes (id INTEGER PRIMARY KEY AUTOINCREMENT, Ref TEXT, DateCommande TEXT, Tel_Livreur REAL, Tel_Client REAL, Status TEXT, Produits TEXT, Code TEXT, AdresseLivraison TEXT, Total REAL, Renvoi TEXT, Motif TEXT)',
                   [],
                 );
               });

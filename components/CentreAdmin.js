@@ -149,7 +149,7 @@ export default function CentreAdmin() {
                         backgroundColor: "rgb(123, 105, 138)",
                         marginBottom: 15
                    }} onPress = {() => {
-                        // alert("ok le manager !")
+                        navigation.navigate("Commandes non approuvées")
                    }}>
                      <Icon
                       source="tools"
